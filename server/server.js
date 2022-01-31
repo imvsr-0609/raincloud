@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const app = express();
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -8,18 +9,19 @@ const { default: axios } = require('axios');
 const db = mysql.createPool({
 	host: 'localhost',
 	user: 'root',
-	password: 'Imvsr@69',
+	password: process.env.DB_PASSWORD,
 	database: 'sql_raincloud',
 	port: 3306,
 });
 
-const weather_api_key = 'da33beb027fd883e7135770cdb802642';
-const reverse_geocoding_key = 'pk.8e5a8b74cd167e398fa3b41fc84feca5';
+const weather_api_key = process.env.OPENWEATHER_API_KEY;
+const reverse_geocoding_key = process.env.LOCATION_IQ_API_KEY;
 
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+//function to parse date-time
 const dateTimeConverter = (date) => {
 	var myDate = new Date(date * 1000);
 	return (
@@ -37,6 +39,7 @@ const dateTimeConverter = (date) => {
 	);
 };
 
+//function to parse date
 const dateConverter = (date) => {
 	var myDate = new Date(date * 1000);
 	return (
@@ -48,6 +51,7 @@ const dateConverter = (date) => {
 	);
 };
 
+//function to fetch weather data
 const fetchWeatherData = async (latitude, longitude) => {
 	try {
 		const { data } = await axios.get(
@@ -59,6 +63,7 @@ const fetchWeatherData = async (latitude, longitude) => {
 	}
 };
 
+//function to fetch city data
 const fetchCityDetails = async (latitude, longitude) => {
 	try {
 		const { data } = await axios.get(
@@ -70,7 +75,109 @@ const fetchCityDetails = async (latitude, longitude) => {
 	}
 };
 
-const insertDailyData = (dailyWeatherData, city_id) => {
+//promise for querying the daily weather data
+getDailyWeather = (cityid) => {
+	return new Promise((resolve, reject) => {
+		const fetchDailyQuery = `SELECT * FROM daily_weather WHERE city_id = '${cityid}'`;
+		db.query(fetchDailyQuery, (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+//promise to insert a new location
+insertNewLocation = (cityDetails) => {
+	const { lat, lon, address } = cityDetails;
+	const { state_district, city, country_code, state } = address;
+	const sqlQuery = `INSERT INTO location (city,latitude,longitude,state,country_code) VALUES('${
+		'state_district' in address ? state_district : city
+	}','${parseFloat(lat).toFixed(6)}','${parseFloat(lon).toFixed(
+		6,
+	)}','${state}','${country_code}');`;
+	return new Promise((resolve, reject) => {
+		db.query(sqlQuery, async (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+//promise to insert post data to location
+insertPostNewLocation = (cityDetails) => {
+	const { city, state, country_code, latitude, longitude } = cityDetails;
+	const sqlQuery = `INSERT INTO location (city,latitude,longitude,state,country_code) VALUES('${city}','${parseFloat(
+		latitude,
+	).toFixed(6)}','${parseFloat(longitude).toFixed(
+		6,
+	)}','${state}','${country_code}')`;
+	return new Promise((resolve, reject) => {
+		db.query(sqlQuery, async (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+//promise to fetch current data
+fetchCurrentData = (insertId) => {
+	return new Promise((resolve, reject) => {
+		const fetchQuery = `SELECT current_weather.city_id, city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${insertId}' AND location.city_id='${insertId}'`;
+
+		db.query(fetchQuery, (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+//promise to insert current data
+insertCurrentData = (currentWeatherData, insertId) => {
+	const {
+		sunrise,
+		sunset,
+		temp,
+		feels_like,
+		pressure,
+		humidity,
+		visibility,
+		wind_speed,
+		weather: weather_data,
+	} = currentWeatherData.current;
+	const { timezone } = currentWeatherData;
+
+	const {
+		main: weather,
+		description: weather_desc,
+		icon: weather_icon,
+	} = weather_data[0];
+
+	const insertCurrentQuery = `INSERT INTO current_weather (city_id ,timezone , sunrise, 
+		sunset ,
+		temp ,
+		feels_like ,
+		pressure ,
+		humidity ,
+		visibility ,
+		wind_speed ,
+		weather , 
+		weather_desc , 
+		weather_icon) VALUES ('${insertId}','${timezone}','${dateTimeConverter(
+		sunrise,
+	)}','${dateTimeConverter(
+		sunset,
+	)}',${temp},${feels_like},${pressure},${humidity},${visibility},${wind_speed},'${weather}','${weather_desc}','${weather_icon}')`;
+	//sconsole.log(insertCurrentQuery);
+	return new Promise((resolve, reject) => {
+		db.query(insertCurrentQuery, (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
+	});
+};
+
+//promise to insert daily weather data
+insertDailyData = (dailyWeatherData, city_id) => {
 	let valueString = [];
 
 	dailyWeatherData.forEach((daily_data) => {
@@ -108,187 +215,95 @@ const insertDailyData = (dailyWeatherData, city_id) => {
 	const insertDailyQuery = `INSERT INTO daily_weather (city_id , todays_date , sunrise , sunset , moonrise , moonset , min_temp , max_temp , feels_like_day , feels_like_night,pressure , humidity , wind_speed , weather , weather_desc , weather_icon) VALUES ${valueString.join(
 		',',
 	)} `;
-	console.log(insertDailyQuery);
-	db.query(insertDailyQuery, (err, result) => {
-		if (err) console.log(err);
-		console.log(result);
+	return new Promise((resolve, reject) => {
+		//console.log(insertDailyQuery);
+		db.query(insertDailyQuery, (err, result) => {
+			if (err) return reject(err);
+			return resolve(result);
+		});
 	});
 };
 
+//get request for current weather
 app.get('/getcurrent', async (req, res) => {
-	console.log(req.query);
+	// console.log(req.query);
 	const { lat: latitude, lon: longitude } = req.query;
 	const cityDetails = await fetchCityDetails(latitude, longitude);
 
 	const { lat, lon, address } = cityDetails;
-	const { state_district, city, country_code, state } = address;
-	console.log({ lat, lon, city, state_district, country_code, state });
+	const { state_district, city } = address;
 
 	const existQuery = `SELECT * FROM location WHERE city = '${
 		'state_district' in address ? state_district : city
 	}'`;
 	db.query(existQuery, async (err, result) => {
-		console.log(result);
 		if (result.length === 0) {
-			const sqlQuery = `INSERT INTO location (city,latitude,longitude,state,country_code) VALUES('${
-				'state_district' in address ? state_district : city
-			}','${parseFloat(lat).toFixed(6)}','${parseFloat(lon).toFixed(
-				6,
-			)}','${state}','${country_code}');`;
-
-			db.query(sqlQuery, async (err, result) => {
-				console.log(result);
+			try {
+				const { insertId } = await insertNewLocation(cityDetails);
 				const currentWeatherData = await fetchWeatherData(lat, lon);
 
-				const {
-					date,
-					sunrise,
-					sunset,
-					temp,
-					feels_like,
-					pressure,
-					humidity,
-					visibility,
-					wind_speed,
-					weather: weather_data,
-				} = currentWeatherData.current;
-				const { timezone, daily } = currentWeatherData;
-
-				const {
-					main: weather,
-					description: weather_desc,
-					icon: weather_icon,
-				} = weather_data[0];
-
-				const { insertId } = result;
-
-				const insertCurrentQuery = `INSERT INTO current_weather (city_id ,timezone , sunrise, 
-					sunset ,
-					temp ,
-					feels_like ,
-					pressure ,
-					humidity ,
-					visibility ,
-					wind_speed ,
-					weather , 
-					weather_desc , 
-					weather_icon) VALUES ('${insertId}','${timezone}','${dateTimeConverter(
-					sunrise,
-				)}','${dateTimeConverter(
-					sunset,
-				)}',${temp},${feels_like},${pressure},${humidity},${visibility},${wind_speed},'${weather}','${weather_desc}','${weather_icon}')`;
-				console.log(insertCurrentQuery);
-				db.query(insertCurrentQuery, (err, result) => {
-					console.log(result);
-					if (err) console.log(err);
-				});
-				console.log(daily);
-				insertDailyData(daily, insertId);
-
-				const fetchQuery = `SELECT current_weather.city_id, city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${insertId}' AND location.city_id='${insertId}'`;
-
-				db.query(fetchQuery, (err, result) => {
-					if (err) console.log(err);
-					res.send(result);
-				});
-			});
+				const { daily } = currentWeatherData;
+				await insertCurrentData(currentWeatherData, insertId);
+				console.log('inserted to current data successfully');
+				await insertDailyData(daily, insertId);
+				console.log('inserted to daily data successfully');
+				const fetchCurrentResult = await fetchCurrentData(insertId);
+				res.status(200).json({ data: fetchCurrentResult });
+			} catch (err) {
+				res.status(400).json({ error: err });
+			}
 		} else {
-			const fetchQuery = `SELECT current_weather.city_id ,city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${result[0].city_id}' AND location.city_id='${result[0].city_id}'`;
-
-			db.query(fetchQuery, (err, result) => {
-				res.send(result);
-			});
+			try {
+				const fetchCurrentResult = await fetchCurrentData(result[0].city_id);
+				res.status(200).json({ data: fetchCurrentResult });
+			} catch (err) {
+				res.status(400).json({ error: err });
+			}
 		}
-		if (err) console.log(err);
+		if (err) res.status(400).json({ error: err });
 	});
 });
 
+//post request for current weather
 app.post('/getcurrent', async (req, res) => {
-	console.log(req.body);
+	//console.log(req.body);
 	// if city exist in db then return that data else fetch using lat and lon and send data.
-	const { city, state, country_code, latitude, longitude } = req.body;
+	const { city, latitude, longitude } = req.body;
 	const existQuery = `SELECT * FROM location WHERE city = '${city}'`;
 	db.query(existQuery, async (err, result) => {
 		if (result.length === 0) {
-			const sqlQuery = `INSERT INTO location (city,latitude,longitude,state,country_code) VALUES('${city}','${parseFloat(
-				latitude,
-			).toFixed(6)}','${parseFloat(longitude).toFixed(
-				6,
-			)}','${state}','${country_code}')`;
-			db.query(sqlQuery, async (err, result) => {
-				console.log(result);
+			try {
+				const { insertId } = await insertPostNewLocation(req.body);
 				const currentWeatherData = await fetchWeatherData(latitude, longitude);
-
-				const {
-					date,
-					sunrise,
-					sunset,
-					temp,
-					feels_like,
-					pressure,
-					humidity,
-					visibility,
-					wind_speed,
-					weather: weather_data,
-				} = currentWeatherData.current;
-				const { timezone, daily } = currentWeatherData;
-
-				const {
-					main: weather,
-					description: weather_desc,
-					icon: weather_icon,
-				} = weather_data[0];
-
-				const { insertId } = result;
-
-				const insertCurrentQuery = `INSERT INTO current_weather (city_id ,timezone , sunrise,
-					sunset ,
-					temp ,
-					feels_like ,
-					pressure ,
-					humidity ,
-					visibility ,
-					wind_speed ,
-					weather ,
-					weather_desc ,
-					weather_icon) VALUES ('${insertId}','${timezone}','${dateTimeConverter(
-					sunrise,
-				)}','${dateTimeConverter(
-					sunset,
-				)}',${temp},${feels_like},${pressure},${humidity},${visibility},${wind_speed},'${weather}','${weather_desc}','${weather_icon}')`;
-
-				db.query(insertCurrentQuery, (err, result) => {
-					console.log(result);
-					if (err) console.log(err);
-				});
-				console.log(daily);
-				insertDailyData(daily, insertId);
-
-				const fetchQuery = `SELECT current_weather.city_id, city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${insertId}' AND location.city_id='${insertId}'`;
-
-				db.query(fetchQuery, (err, result) => {
-					if (err) console.log(err);
-					res.send(result);
-				});
-			});
+				const { daily } = currentWeatherData;
+				await insertCurrentData(currentWeatherData, insertId);
+				await insertDailyData(daily, insertId);
+				const fetchCurrentResult = await fetchCurrentData(insertId);
+				res.status(200).json({ data: fetchCurrentResult });
+			} catch (err) {
+				res.status(400).json({ error: err });
+			}
 		} else {
-			const fetchQuery = `SELECT current_weather.city_id, city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${result[0].city_id}' AND location.city_id='${result[0].city_id}'`;
-
-			db.query(fetchQuery, (err, result) => {
-				res.send(result);
-			});
+			try {
+				const fetchCurrentResult = await fetchCurrentData(result[0].city_id);
+				res.status(200).json({ data: fetchCurrentResult });
+			} catch (err) {
+				res.status(400).json({ error: err });
+			}
 		}
-		if (err) console.log(err);
+		if (err) res.status(400).json({ error: err });
 	});
 });
 
-app.get('/getdaily', (req, res) => {
+//get request for daily weather
+app.get('/getdaily', async (req, res) => {
 	const { cityid } = req.query;
-
-	const fetchDailyQuery = `SELECT * FROM daily_weather WHERE city_id = '${cityid}'`;
-	db.query(fetchDailyQuery, (err, result) => {
-		res.send(result);
-	});
+	try {
+		const fetchDailyWeather = await getDailyWeather(cityid);
+		res.status(200).json({ data: fetchDailyWeather });
+	} catch (err) {
+		res.status(400).json({ error: err });
+	}
 });
 
 app.listen('3001', () => {

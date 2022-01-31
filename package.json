@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "axios": "^0.25.0",
+    "react-error-boundary": "^3.1.4",
+    "react-icons": "^4.3.1"
+  }
+}

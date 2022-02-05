@@ -122,7 +122,7 @@ insertPostNewLocation = (cityDetails) => {
 //promise to fetch current data
 fetchCurrentData = (insertId) => {
 	return new Promise((resolve, reject) => {
-		const fetchQuery = `SELECT current_weather.city_id, city , state , timezone , country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${insertId}' AND location.city_id='${insertId}'`;
+		const fetchQuery = `SELECT current_weather.city_id, city , state , timezone ,timezone_offset, country_code , sunrise , sunset , temp ,feels_like , pressure , humidity , visibility , wind_speed ,weather , weather_desc , weather_icon FROM location  JOIN current_weather ON current_weather.city_id = '${insertId}' AND location.city_id='${insertId}'`;
 
 		db.query(fetchQuery, (err, result) => {
 			if (err) return reject(err);
@@ -144,7 +144,7 @@ insertCurrentData = (currentWeatherData, insertId) => {
 		wind_speed,
 		weather: weather_data,
 	} = currentWeatherData.current;
-	const { timezone } = currentWeatherData;
+	const { timezone, timezone_offset } = currentWeatherData;
 
 	const {
 		main: weather,
@@ -152,7 +152,7 @@ insertCurrentData = (currentWeatherData, insertId) => {
 		icon: weather_icon,
 	} = weather_data[0];
 
-	const insertCurrentQuery = `INSERT INTO current_weather (city_id ,timezone , sunrise, 
+	const insertCurrentQuery = `INSERT INTO current_weather (city_id ,timezone ,timezone_offset, sunrise, 
 		sunset ,
 		temp ,
 		feels_like ,
@@ -162,7 +162,7 @@ insertCurrentData = (currentWeatherData, insertId) => {
 		wind_speed ,
 		weather , 
 		weather_desc , 
-		weather_icon) VALUES ('${insertId}','${timezone}','${dateTimeConverter(
+		weather_icon) VALUES ('${insertId}','${timezone}','${timezone_offset}','${dateTimeConverter(
 		sunrise,
 	)}','${dateTimeConverter(
 		sunset,

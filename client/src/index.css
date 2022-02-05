@@ -15,3 +15,18 @@ code {
 	font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
 		monospace;
 }
+
+.bg-custom {
+	background-color: #37474f;
+}
+
+.shadow-custom {
+	box-shadow: rgba(0, 0, 0, 0.5) 0px 10px 50px;
+}
+.card-shadow {
+	box-shadow: rgba(0, 0, 0, 0.6) 0px 10px 25px;
+}
+
+::-webkit-scrollbar {
+	display: none;
+}

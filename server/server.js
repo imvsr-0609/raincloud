@@ -7,10 +7,10 @@ const bodyParser = require('body-parser');
 const { default: axios } = require('axios');
 
 const db = mysql.createPool({
-	host: 'localhost',
-	user: 'root',
+	host: 'sql3.freesqldatabase.com',
+	user: 'sql3474703',
 	password: process.env.DB_PASSWORD,
-	database: 'sql_raincloud',
+	database: 'sql3474703',
 	port: 3306,
 });
 
@@ -306,6 +306,6 @@ app.get('/getdaily', async (req, res) => {
 	}
 });
 
-app.listen(process.env.PORT || 3001, () => {
-	console.log('Server running on port 3001');
+app.listen(process.env.PORT || 3005, () => {
+	console.log('Server running on port 3005');
 });

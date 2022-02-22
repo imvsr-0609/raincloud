@@ -34,10 +34,10 @@ const CurrentWeather = ({ data, updateData }) => {
 	} = data;
 
 	return (
-		<div className="flex flex-col items-center md:flex-row justify-evenly md:justify-between md:items-start gap-10 flex-1 p-6 lg:p-0 ">
-			<div className=" flex md:flex-col justify-around gap-4 md:gap-2 w-full ">
-				<div className="text-right md:text-left">
-					<div className="text-4xl flex justify-end md:justify-start items-center gap-2">
+		<div className="flex flex-col items-center md:flex-row justify-evenly md:justify-between md:items-start gap-10 flex-1 sm:p-6 lg:p-0 ">
+			<div className=" flex flex-col sm:flex-row items-center md:items-start md:flex-col justify-around gap-4 md:gap-2 w-full ">
+				<div className="text-center sm:text-right md:text-left">
+					<div className="text-4xl flex justify-center sm:justify-end md:justify-start items-center gap-2">
 						<img
 							className="w-16 h-16 object-contain invert "
 							src={weatherIcon[weather_icon]}
@@ -58,7 +58,7 @@ const CurrentWeather = ({ data, updateData }) => {
 					<p className="text-xs">{timezone}</p>
 				</div>
 
-				<div>
+				<div className="flex flex-col items-center sm:items-start">
 					<div className="flex items-end gap-4">
 						<h1 className="text-6xl font-bold">
 							{(temp - 273.15).toFixed(0)} <span className="text-4xl">°C</span>
@@ -80,8 +80,8 @@ const CurrentWeather = ({ data, updateData }) => {
 				</div>
 			</div>
 
-			<div className="flex md:flex-col gap-8 md:gap-4 text-center md:text-left md:w-40 ">
-				<div className="flex  items-start gap-2">
+			<div className="grid grid-cols-2 sm:grid-cols-4 md:flex md:flex-col gap-4 text-center md:text-left w-full md:w-40 ">
+				<div className="flex justify-center md:justify-start p-3 sm:p-2 md:p-0 items-start gap-2">
 					<WiHumidity className="text-xl" />
 
 					<div className="flex flex-col">
@@ -89,7 +89,7 @@ const CurrentWeather = ({ data, updateData }) => {
 						<h3 className="text-lg font-semibold">{humidity}%</h3>
 					</div>
 				</div>
-				<div className="flex  items-start gap-2">
+				<div className="flex justify-center md:justify-start p-3 sm:p-2 md:p-0  items-start gap-2">
 					<WiBarometer className="text-xl" />
 
 					<div className="flex flex-col">
@@ -97,7 +97,7 @@ const CurrentWeather = ({ data, updateData }) => {
 						<h3 className="text-lg font-semibold">{pressure} pa</h3>
 					</div>
 				</div>
-				<div className="flex  items-start gap-2">
+				<div className="flex justify-center md:justify-start p-3 sm:p-2 md:p-0  items-start gap-2">
 					<WiCloudyWindy className="text-xl" />
 
 					<div className="flex flex-col">
@@ -107,7 +107,7 @@ const CurrentWeather = ({ data, updateData }) => {
 						</h3>
 					</div>
 				</div>
-				<div className="flex  items-start gap-2">
+				<div className="flex justify-center md:justify-start p-3 sm:p-2 md:p-0  items-start gap-2">
 					<WiStrongWind className="text-xl" />
 
 					<div className="flex flex-col">

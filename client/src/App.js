@@ -123,7 +123,7 @@ function App() {
 									placeholder="Enter Location"
 								/>
 								{autoCompleteData.length > 0 && (
-									<div className="bg-black bg-opacity-10 rounded-sm overflow-hidden h-40 overflow-y-scroll">
+									<div className="bg-slate-800 bg-opacity-100 md:bg-opacity-10 rounded-sm overflow-hidden h-40 overflow-y-scroll">
 										{autoCompleteData.map((data) => (
 											<p
 												key={uuid()}

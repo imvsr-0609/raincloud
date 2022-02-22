@@ -4,6 +4,8 @@ import axios from './axios/axios';
 import CurrentWeather from './components/CurrentWeather';
 import DailyWeather from './components/DailyWeather';
 import Loader from './components/Loader';
+import cloudyday from './assets/images/cloudyday.png';
+import { weatherWallpaper } from './components/WeatherWallpaper';
 
 function App() {
 	const [loading, setLoading] = useState(true);
@@ -104,10 +106,10 @@ function App() {
 			<div className="w-full h-full lg:max-w-5xl lg:h-4/5 xl:w-4/5 xl:h-4/5 bg-white lg:rounded-xl lg:border-8 border-black shadow-custom overflow-y-scroll lg:overflow-hidden relative">
 				<img
 					className="w-full h-full object-cover"
-					src="https://images.unsplash.com/photo-1519552928909-67ca7aef9265?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8d2ludGVyJTIwc3Vuc2V0fGVufDB8fDB8fA%3D%3D&w=1000&q=80"
-					alt=""
+					src={weatherWallpaper[currentWeatherData.weather_icon]}
+					alt={cloudyday}
 				/>
-				<div className="absolute inset-0 bg-gradient-to-t from-slate-900 flex flex-col justify-between p-4 sm:p-6 md:p-8 ">
+				<div className="absolute inset-0 bg-gradient-to-t from-slate-900  flex flex-col justify-between p-4 sm:p-6 md:p-8 ">
 					{loading ? (
 						<Loader />
 					) : (
@@ -116,7 +118,7 @@ function App() {
 
 							<div className="z-20 absolute right-1/2 transform translate-x-1/2 max-w-xs ">
 								<input
-									className="p-1 w-full outline-none px-2 bg-transparent  placeholder-slate-300 border-opacity-40 border rounded-sm text-sm border-slate-300 "
+									className="p-1 w-full outline-none px-2 bg-transparent  placeholder-slate-100 border-opacity-40 border-2 rounded-sm text-sm border-white "
 									type="text"
 									value={location}
 									onChange={(e) => setLocation(e.target.value.trim())}

@@ -37,5 +37,5 @@ export const weatherIcon = {
 	'13d': thirteend,
 	'50n': fiftyn,
 	'50d': fiftyd,
-	unknown: unknown,
+	unknown,
 };
